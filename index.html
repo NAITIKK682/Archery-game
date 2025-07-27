@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap">
+        <title>Epic Archery Challenge | Developed by Naitik Kushwaha</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta charset="utf-8">
+        <style>
+            body {
+                margin: 0;
+                padding: 0;
+                overflow: hidden;
+                font-family: 'Poppins', sans-serif;
+                background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+                background-size: 400% 400%;
+                animation: gradientBG 15s ease infinite;
+                color: white;
+            }
+            
+            @keyframes gradientBG {
+                0% { background-position: 0% 50%; }
+                50% { background-position: 100% 50%; }
+                100% { background-position: 0% 50%; }
+            }
+            
+            #mainContainer {
+                position: relative;
+                width: 100vw;
+                height: 100vh;
+            }
+            
+            canvas {
+                position: absolute;
+                top: 0;
+                left: 0;
+            }
+            
+            #myCanvas {
+                z-index: 1;
+            }
+            
+            #animCanvas {
+                z-index: 2;
+            }
+            
+            #score {
+                position: absolute;
+                top: 20px;
+                right: 20px;
+                font-size: 3em;
+                color: #fff;
+                text-shadow: 0 0 10px rgba(0,0,0,0.5);
+                z-index: 3;
+            }
+            
+            #showPoint {
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                font-size: 3em;
+                color: gold;
+                text-shadow: 0 0 10px rgba(0,0,0,0.8);
+                opacity: 0;
+                transition: opacity 0.5s;
+                z-index: 4;
+            }
+            
+            #startMenu {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.7);
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                z-index: 5;
+            }
+            
+            #title {
+                font-size: 4em;
+                text-align: center;
+                margin-bottom: 30px;
+                text-shadow: 0 0 20px rgba(255,255,255,0.3);
+                background: linear-gradient(to right, #ff8a00, #e52e71);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+            }
+            
+            #startMenu button {
+                padding: 15px 40px;
+                font-size: 1.5em;
+                background: linear-gradient(45deg, #ff8a00, #e52e71);
+                color: white;
+                border: none;
+                border-radius: 50px;
+                cursor: pointer;
+                transition: all 0.3s;
+                box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            }
+            
+            #startMenu button:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 10px 20px rgba(0,0,0,0.4);
+            }
+            
+            #startMenu h2 {
+                margin-top: 30px;
+                font-size: 1.5em;
+                text-align: center;
+            }
+            
+            #best {
+                font-size: 2em;
+                color: gold;
+            }
+            
+            #developer {
+                position: absolute;
+                bottom: 20px;
+                width: 100%;
+                text-align: center;
+                font-size: 1em;
+                color: rgba(255,255,255,0.7);
+            }
+            
+            #powerBar {
+                position: absolute;
+                bottom: 50px;
+                left: 50%;
+                transform: translateX(-50%);
+                width: 200px;
+                height: 20px;
+                background: rgba(255,255,255,0.2);
+                border-radius: 10px;
+                overflow: hidden;
+                z-index: 3;
+            }
+            
+            #powerFill {
+                height: 100%;
+                width: 0%;
+                background: linear-gradient(to right, #4facfe, #00f2fe);
+                transition: width 0.1s;
+            }
+            
+            #levelDisplay {
+                position: absolute;
+                top: 20px;
+                left: 20px;
+                font-size: 1.5em;
+                color: white;
+                z-index: 3;
+            }
+            
+            .target-info {
+                position: absolute;
+                top: 80px;
+                right: 20px;
+                font-size: 1.2em;
+                color: white;
+                z-index: 3;
+            }
+            
+            #comboCounter {
+                position: absolute;
+                top: 120px;
+                right: 20px;
+                font-size: 1.5em;
+                color: gold;
+                z-index: 3;
+                opacity: 0;
+                transition: opacity 0.3s;
+            }
+        </style>
+    </head>
+    <body>
+        <audio id="bgMusic" loop>
+            <source src="https://soundclouddownloader.org/downloads/mp3-6012945195192015-159153412898642.mp3" type="audio/mpeg">
+        </audio>
+        <audio id="hitSound">
+            <source src="https://www.soundjay.com/buttons/sounds/button-09.mp3" type="audio/mpeg">
+        </audio>
+        <audio id="powerSound">
+            <source src="https://www.soundjay.com/buttons/sounds/button-10.mp3" type="audio/mpeg">
+        </audio>
+        
+        <div id="mainContainer">
+            <canvas id="myCanvas"></canvas>
+            <canvas id="animCanvas"></canvas>
+            
+            <h1 id="score">0</h1>
+            <div id="levelDisplay">Level: 1</div>
+            <div class="target-info">Targets: <span id="targetsHit">0</span>/<span id="totalTargets">5</span></div>
+            <div id="comboCounter">Combo: 0x</div>
+            
+            <div id="powerBar">
+                <div id="powerFill"></div>
+            </div>
+            
+            <div id="showPoint">
+                <div id="timerDiv"></div>
+                <p id="arrs">&uarr;</p><span class="u">&uarr; +4</span>
+            </div>
+            
+            <div id="startMenu">
+                <h1 id="title"><span style="font-size:60px">E</span>PIC<br><span style="font-size:60px">A</span>RCHERY<br><span style="font-size:60px">C</span>HALLENGE</h1>
+                <button id="startButton">START ADVENTURE</button>
+                <h2>BEST SCORE<br><span id="best">0</span></h2>
+                <div id="developer">Developed by <strong>Naitik Kushwaha</strong></div>
+            </div>
+        </div>
+        
+        <script>
+            // Game variables
+            let canvas, animCanvas, ctx, animCtx;
+            let bow = {x: 0, y: 0, angle: 0};
+            let arrow = {x: 0, y: 0, speed: 0, angle: 0, isFlying: false};
+            let targets = [];
+            let explosions = [];
+            let score = 0;
+            let bestScore = localStorage.getItem('bestScore') || 0;
+            let gameStarted = false;
+            let power = 0;
+            let isCharging = false;
+            let powerDirection = 1;
+            let level = 1;
+            let targetsHit = 0;
+            let totalTargets = 5;
+            let comboCount = 0;
+            let lastHitTime = 0;
+            let comboTimeout;
+            
+            // DOM elements
+            const scoreElement = document.getElementById('score');
+            const bestScoreElement = document.getElementById('best');
+            const startMenu = document.getElementById('startMenu');
+            const startButton = document.getElementById('startButton');
+            const showPoint = document.getElementById('showPoint');
+            const powerFill = document.getElementById('powerFill');
+            const levelDisplay = document.getElementById('levelDisplay');
+            const targetsHitElement = document.getElementById('targetsHit');
+            const totalTargetsElement = document.getElementById('totalTargets');
+            const comboCounter = document.getElementById('comboCounter');
+            const bgMusic = document.getElementById('bgMusic');
+            const hitSound = document.getElementById('hitSound');
+            const powerSound = document.getElementById('powerSound');
+            
+            // Initialize game
+            function init() {
+                canvas = document.getElementById('myCanvas');
+                animCanvas = document.getElementById('animCanvas');
+                
+                // Set canvas sizes
+                resizeCanvas();
+                window.addEventListener('resize', resizeCanvas);
+                
+                ctx = canvas.getContext('2d');
+                animCtx = animCanvas.getContext('2d');
+                
+                // Set best score
+                bestScoreElement.textContent = bestScore;
+                
+                // Event listeners
+                startButton.addEventListener('click', startGame);
+                window.addEventListener('mousemove', moveBow);
+                window.addEventListener('mousedown', startCharging);
+                window.addEventListener('mouseup', shootArrow);
+                window.addEventListener('touchmove', handleTouch);
+                window.addEventListener('touchstart', startCharging);
+                window.addEventListener('touchend', shootArrow);
+                
+                // Start game loop
+                requestAnimationFrame(gameLoop);
+                
+                // Power bar animation
+                setInterval(updatePowerBar, 50);
+            }
+            
+            function resizeCanvas() {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+                animCanvas.width = window.innerWidth;
+                animCanvas.height = window.innerHeight;
+                
+                // Reset bow position
+                bow.x = 50;
+                bow.y = canvas.height / 2;
+            }
+            
+            function startGame() {
+                gameStarted = true;
+                startMenu.style.display = 'none';
+                score = 0;
+                targetsHit = 0;
+                level = 1;
+                updateScore();
+                createTargets();
+                bgMusic.play().catch(e => console.log("Autoplay prevented:", e));
+            }
+            
+            function moveBow(e) {
+                if (!gameStarted) return;
+                
+                const rect = canvas.getBoundingClientRect();
+                const clientX = e.clientX || e.touches[0].clientX;
+                const clientY = e.clientY || e.touches[0].clientY;
+                
+                // Calculate angle between bow and mouse/touch
+                const dx = clientX - rect.left - bow.x;
+                const dy = clientY - rect.top - bow.y;
+                bow.angle = Math.atan2(dy, dx);
+            }
+            
+            function handleTouch(e) {
+                if (!gameStarted) return;
+                e.preventDefault();
+                moveBow(e);
+            }
+            
+            function startCharging() {
+                if (!gameStarted) return;
+                isCharging = true;
+                powerSound.currentTime = 0;
+                powerSound.play().catch(e => console.log("Sound play prevented:", e));
+            }
+            
+            function updatePowerBar() {
+                if (isCharging) {
+                    power += powerDirection * 2;
+                    if (power >= 100) {
+                        power = 100;
+                        powerDirection = -1;
+                    } else if (power <= 0) {
+                        power = 0;
+                        powerDirection = 1;
+                    }
+                    powerFill.style.width = power + '%';
+                }
+            }
+            
+            function shootArrow() {
+                if (!gameStarted || !isCharging || arrow.isFlying) return;
+                
+                isCharging = false;
+                arrow.isFlying = true;
+                arrow.x = bow.x;
+                arrow.y = bow.y;
+                arrow.angle = bow.angle;
+                arrow.speed = 10 + (power / 10); // Speed based on power
+                
+                // Reset power
+                power = 0;
+                powerFill.style.width = '0%';
+            }
+            
+            function createTargets() {
+                targets = [];
+                totalTargets = 5 + Math.floor(level * 0.5);
+                totalTargetsElement.textContent = totalTargets;
+                
+                for (let i = 0; i < totalTargets; i++) {
+                    const size = 30 + Math.random() * 30;
+                    const x = canvas.width - 100 - Math.random() * (canvas.width - 200);
+                    const y = 100 + Math.random() * (canvas.height - 200);
+                    const speed = 1 + Math.random() * level * 0.5;
+                    const angle = Math.random() * Math.PI * 2;
+                    
+                    targets.push({
+                        x: x,
+                        y: y,
+                        size: size,
+                        speed: speed,
+                        angle: angle,
+                        rings: [
+                            {radius: size, color: 'gold', points: 1},
+                            {radius: size * 0.7, color: 'red', points: 2},
+                            {radius: size * 0.4, color: 'blue', points: 3},
+                            {radius: size * 0.2, color: 'black', points: 5}
+                        ]
+                    });
+                }
+            }
+            
+            function updateTargets() {
+                for (let i = 0; i < targets.length; i++) {
+                    const target = targets[i];
+                    
+                    // Move target
+                    target.x += Math.cos(target.angle) * target.speed;
+                    target.y += Math.sin(target.angle) * target.speed;
+                    
+                    // Bounce off walls
+                    if (target.x < target.size || target.x > canvas.width - target.size) {
+                        target.angle = Math.PI - target.angle;
+                    }
+                    if (target.y < target.size || target.y > canvas.height - target.size) {
+                        target.angle = -target.angle;
+                    }
+                    
+                    // Random direction changes
+                    if (Math.random() < 0.01) {
+                        target.angle += (Math.random() - 0.5) * Math.PI/2;
+                    }
+                }
+            }
+            
+            function updateArrow() {
+                if (!arrow.isFlying) return;
+                
+                // Move arrow
+                arrow.x += Math.cos(arrow.angle) * arrow.speed;
+                arrow.y += Math.sin(arrow.angle) * arrow.speed;
+                
+                // Check if arrow is out of bounds
+                if (arrow.x < 0 || arrow.x > canvas.width || arrow.y < 0 || arrow.y > canvas.height) {
+                    arrow.isFlying = false;
+                    comboCount = 0;
+                    updateComboCounter();
+                    return;
+                }
+                
+                // Check for target hits
+                for (let i = 0; i < targets.length; i++) {
+                    const target = targets[i];
+                    const dx = arrow.x - target.x;
+                    const dy = arrow.y - target.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    
+                    for (let j = 0; j < target.rings.length; j++) {
+                        const ring = target.rings[j];
+                        if (distance < ring.radius) {
+                            // Hit!
+                            arrow.isFlying = false;
+                            createExplosion(arrow.x, arrow.y, ring.color);
+                            
+                            // Calculate points with combo multiplier
+                            const points = ring.points * (1 + comboCount * 0.2);
+                            score += Math.floor(points);
+                            showHitPoints(arrow.x, arrow.y, Math.floor(points));
+                            
+                            // Update combo
+                            const now = Date.now();
+                            if (now - lastHitTime < 2000) { // 2 second combo window
+                                comboCount++;
+                            } else {
+                                comboCount = 1;
+                            }
+                            lastHitTime = now;
+                            updateComboCounter();
+                            
+                            // Remove the hit target
+                            targets.splice(i, 1);
+                            targetsHit++;
+                            targetsHitElement.textContent = targetsHit;
+                            
+                            // Play hit sound
+                            hitSound.currentTime = 0;
+                            hitSound.play().catch(e => console.log("Sound play prevented:", e));
+                            
+                            // Check level completion
+                            if (targets.length === 0) {
+                                levelUp();
+                            }
+                            
+                            updateScore();
+                            return;
+                        }
+                    }
+                }
+            }
+            
+            function updateComboCounter() {
+                if (comboCount > 1) {
+                    comboCounter.textContent = `Combo: ${comboCount}x`;
+                    comboCounter.style.opacity = '1';
+                    
+                    // Clear previous timeout
+                    if (comboTimeout) clearTimeout(comboTimeout);
+                    
+                    // Hide after 2 seconds
+                    comboTimeout = setTimeout(() => {
+                        comboCounter.style.opacity = '0';
+                    }, 2000);
+                } else {
+                    comboCounter.style.opacity = '0';
+                }
+            }
+            
+            function levelUp() {
+                level++;
+                levelDisplay.textContent = `Level: ${level}`;
+                targetsHit = 0;
+                targetsHitElement.textContent = targetsHit;
+                createTargets();
+                
+                // Show level up message
+                showHitPoints(canvas.width/2, canvas.height/2, `LEVEL ${level}!`, 'gold', 40);
+            }
+            
+            function createExplosion(x, y, color) {
+                explosions.push({
+                    x: x,
+                    y: y,
+                    radius: 5,
+                    maxRadius: 30,
+                    color: color,
+                    alpha: 1
+                });
+            }
+            
+            function updateExplosions() {
+                for (let i = explosions.length - 1; i >= 0; i--) {
+                    const explosion = explosions[i];
+                    explosion.radius += 1;
+                    explosion.alpha -= 0.02;
+                    
+                    if (explosion.alpha <= 0) {
+                        explosions.splice(i, 1);
+                    }
+                }
+            }
+            
+            function showHitPoints(x, y, points, color = 'gold', size = 30) {
+                const pointElement = document.createElement('div');
+                pointElement.textContent = `+${points}`;
+                pointElement.style.position = 'absolute';
+                pointElement.style.left = `${x}px`;
+                pointElement.style.top = `${y}px`;
+                pointElement.style.color = color;
+                pointElement.style.fontSize = `${size}px`;
+                pointElement.style.fontWeight = 'bold';
+                pointElement.style.textShadow = '0 0 5px rgba(0,0,0,0.8)';
+                pointElement.style.transform = 'translate(-50%, -50%)';
+                pointElement.style.transition = 'all 0.5s';
+                pointElement.style.opacity = '1';
+                pointElement.style.zIndex = '10';
+                
+                document.body.appendChild(pointElement);
+                
+                setTimeout(() => {
+                    pointElement.style.top = `${y - 50}px`;
+                    pointElement.style.opacity = '0';
+                    
+                    setTimeout(() => {
+                        document.body.removeChild(pointElement);
+                    }, 500);
+                }, 10);
+            }
+            
+            function updateScore() {
+                scoreElement.textContent = score;
+                
+                if (score > bestScore) {
+                    bestScore = score;
+                    bestScoreElement.textContent = bestScore;
+                    localStorage.setItem('bestScore', bestScore);
+                }
+            }
+            
+            function drawBow() {
+                ctx.save();
+                ctx.translate(bow.x, bow.y);
+                ctx.rotate(bow.angle);
+                
+                // Bow body
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.quadraticCurveTo(20, 0, 40, -30);
+                ctx.quadraticCurveTo(60, 0, 40, 30);
+                ctx.quadraticCurveTo(20, 0, 0, 0);
+                ctx.fillStyle = '#8B4513';
+                ctx.fill();
+                ctx.strokeStyle = '#000';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                
+                // Bow string (only when not charging)
+                if (!isCharging) {
+                    ctx.beginPath();
+                    ctx.moveTo(0, -20);
+                    ctx.lineTo(40, -15);
+                    ctx.moveTo(0, 20);
+                    ctx.lineTo(40, 15);
+                    ctx.strokeStyle = '#fff';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                } else {
+                    // Draw charging effect
+                    ctx.beginPath();
+                    ctx.arc(0, 0, 30, 0, Math.PI * 2);
+                    ctx.strokeStyle = `rgba(255, ${200 - power}, ${100 - power/2}, ${0.5 + power/200})`;
+                    ctx.lineWidth = 3 + power/20;
+                    ctx.stroke();
+                }
+                
+                ctx.restore();
+                
+                // Draw arrow when not flying
+                if (!arrow.isFlying && !isCharging) {
+                    ctx.save();
+                    ctx.translate(bow.x, bow.y);
+                    ctx.rotate(bow.angle);
+                    
+                    // Arrow
+                    ctx.beginPath();
+                    ctx.moveTo(40, 0);
+                    ctx.lineTo(-30, 0);
+                    ctx.strokeStyle = '#555';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                    
+                    // Arrow head
+                    ctx.beginPath();
+                    ctx.moveTo(40, 0);
+                    ctx.lineTo(30, -5);
+                    ctx.lineTo(30, 5);
+                    ctx.closePath();
+                    ctx.fillStyle = 'silver';
+                    ctx.fill();
+                    
+                    // Fletching
+                    ctx.beginPath();
+                    ctx.moveTo(-30, 0);
+                    ctx.lineTo(-35, -5);
+                    ctx.lineTo(-40, 0);
+                    ctx.lineTo(-35, 5);
+                    ctx.closePath();
+                    ctx.fillStyle = 'red';
+                    ctx.fill();
+                    
+                    ctx.restore();
+                }
+            }
+            
+            function drawArrow() {
+                if (!arrow.isFlying) return;
+                
+                ctx.save();
+                ctx.translate(arrow.x, arrow.y);
+                ctx.rotate(arrow.angle);
+                
+                // Arrow
+                ctx.beginPath();
+                ctx.moveTo(10, 0);
+                ctx.lineTo(-20, 0);
+                ctx.strokeStyle = '#555';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                
+                // Arrow head
+                ctx.beginPath();
+                ctx.moveTo(10, 0);
+                ctx.lineTo(5, -3);
+                ctx.lineTo(5, 3);
+                ctx.closePath();
+                ctx.fillStyle = 'silver';
+                ctx.fill();
+                
+                // Fletching
+                ctx.beginPath();
+                ctx.moveTo(-20, 0);
+                ctx.lineTo(-23, -3);
+                ctx.lineTo(-26, 0);
+                ctx.lineTo(-23, 3);
+                ctx.closePath();
+                ctx.fillStyle = 'red';
+                ctx.fill();
+                
+                ctx.restore();
+            }
+            
+            function drawTargets() {
+                for (const target of targets) {
+                    ctx.save();
+                    ctx.translate(target.x, target.y);
+                    
+                    // Draw rings from largest to smallest
+                    for (let i = 0; i < target.rings.length; i++) {
+                        const ring = target.rings[i];
+                        ctx.beginPath();
+                        ctx.arc(0, 0, ring.radius, 0, Math.PI * 2);
+                        ctx.fillStyle = ring.color;
+                        ctx.fill();
+                        ctx.strokeStyle = '#fff';
+                        ctx.lineWidth = 2;
+                        ctx.stroke();
+                    }
+                    
+                    // Crosshair
+                    ctx.beginPath();
+                    ctx.moveTo(-5, 0);
+                    ctx.lineTo(5, 0);
+                    ctx.moveTo(0, -5);
+                    ctx.lineTo(0, 5);
+                    ctx.strokeStyle = '#fff';
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                    
+                    ctx.restore();
+                }
+            }
+            
+            function drawExplosions() {
+                animCtx.clearRect(0, 0, animCanvas.width, animCanvas.height);
+                
+                for (const explosion of explosions) {
+                    animCtx.beginPath();
+                    animCtx.arc(explosion.x, explosion.y, explosion.radius, 0, Math.PI * 2);
+                    animCtx.fillStyle = `rgba(${
+                        explosion.color === 'gold' ? '255,215,0' : 
+                        explosion.color === 'red' ? '255,0,0' : 
+                        explosion.color === 'blue' ? '0,0,255' : '0,0,0'
+                    }, ${explosion.alpha})`;
+                    animCtx.fill();
+                    
+                    // Sparkles
+                    for (let i = 0; i < 5; i++) {
+                        const angle = Math.random() * Math.PI * 2;
+                        const dist = Math.random() * explosion.radius;
+                        const sparkleX = explosion.x + Math.cos(angle) * dist;
+                        const sparkleY = explosion.y + Math.sin(angle) * dist;
+                        
+                        animCtx.beginPath();
+                        animCtx.arc(sparkleX, sparkleY, 2, 0, Math.PI * 2);
+                        animCtx.fillStyle = `rgba(255,255,255,${explosion.alpha})`;
+                        animCtx.fill();
+                    }
+                }
+            }
+            
+            function gameLoop() {
+                // Clear canvas
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                if (gameStarted) {
+                    updateTargets();
+                    updateArrow();
+                    updateExplosions();
+                }
+                
+                // Draw game elements
+                drawTargets();
+                drawBow();
+                drawArrow();
+                drawExplosions();
+                
+                requestAnimationFrame(gameLoop);
+            }
+            
+            // Start the game
+            init();
+        </script>
+    </body>
+</html>
